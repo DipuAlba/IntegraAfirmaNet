@@ -21,7 +21,7 @@ namespace IntegraAfirmaNet.Soap.Assertions
 
         public override SoapFilter CreateClientInputFilter(FilterCreationContext context)
         {
-            return new InputSoapFilter(_serverCert);
+            return new SignatureFramework.InputSoapFilter(_serverCert);
         }
 
         public override SoapFilter CreateClientOutputFilter(FilterCreationContext context)

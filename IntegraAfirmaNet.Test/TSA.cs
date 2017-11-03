@@ -4,6 +4,7 @@ using System.Net;
 using System.Xml;
 using IntegraAfirmaNet.Soap.Clients;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Formatting = Newtonsoft.Json.Formatting;
 
 namespace IntegraAfirmaNet.Test
 {
@@ -21,8 +22,10 @@ namespace IntegraAfirmaNet.Test
                 var resultado = servicio.createTimeStampCertificado(
                     @"\\nas01vnx\usuarios\INFORMATICA\informatica\Sistemas\Sede Electrónica\old\sello_componente_DIPUALBA.ES.p12", 
                     System.IO.File.ReadAllText(@"\\nas01vnx\usuarios\INFORMATICA\informatica\Sistemas\Sede Electrónica\old\pin.txt"), 
+                    //@"\\nas01vnx\usuarios\INFORMATICA\informatica\Sistemas\Sede Electrónica\Certificado de sello Diputacion - Camerfirma\Certificado de sello Diputacion hasta 2020.p12",
+                    //System.IO.File.ReadAllText(@"\\nas01vnx\usuarios\INFORMATICA\informatica\Sistemas\Sede Electrónica\Certificado de sello Diputacion - Camerfirma\Pin certificado.txt"),
                     GenerarSignRequest());
-                Debug.WriteLine(resultado.SignatureObject.SchemaRefs);
+                Debug.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(resultado, Formatting.Indented));
             }
 
         }

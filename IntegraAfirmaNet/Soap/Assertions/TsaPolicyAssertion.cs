@@ -96,13 +96,13 @@ namespace IntegraAfirmaNet.Soap.Assertions
             }
 
             /// <summary>
-            /// No se implementa la entrada al cliente
+            /// Exclusivo de TS@ para sobreescribir mustUnderstand
             /// </summary>
             /// <remarks>Si se desea implementar un filtro para validar las respuestas de la plataforma, es aquí donde debería instanciarse.</remarks>
             /// <returns>null</returns>
             public override SoapFilter CreateClientInputFilter(FilterCreationContext context)
             {
-                return null;
+                return new InputSoapFilter(this);
             }
 
             /// <summary>
@@ -257,6 +257,31 @@ namespace IntegraAfirmaNet.Soap.Assertions
             }
         }
 
+    }
+
+    /// <summary>
+    /// Exclusivo de TS@ se sobreescribe mustUnderstand para cumplir especificaciones
+    /// </summary>
+    internal class InputSoapFilter : SoapFilter
+    {
+        private TsaPolicyAssertions.X509SecurityTokenSoapAssertion parentAssertion;
+        private X509SecurityToken token;
+
+        public InputSoapFilter(TsaPolicyAssertions.X509SecurityTokenSoapAssertion parent)
+        {
+            parentAssertion = parent;
+            token = parentAssertion.Token;
+        }
+        public override SoapFilterResult ProcessMessage(SoapEnvelope envelope)
+        {
+            return NoMustUnderstand(envelope);
+        }
+
+        private static SoapFilterResult NoMustUnderstand(SoapEnvelope envelope)
+        {
+            envelope.InnerXml = envelope.InnerXml.Replace("mustUnderstand", "MustUnderstand");
+            return SoapFilterResult.Continue;
+        }
     }
 
 }
