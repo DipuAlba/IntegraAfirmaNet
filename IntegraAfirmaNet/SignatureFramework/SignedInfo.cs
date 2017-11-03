@@ -54,7 +54,7 @@ namespace IntegraAfirmaNet.SignatureFramework
             set { signatureMethod = value; }
         }
 
-        public void AddReference(System.Security.Cryptography.Xml.Reference reference)
+        public void AddReference(Reference reference)
         {
             references.Add(reference);
         }
@@ -99,7 +99,7 @@ namespace IntegraAfirmaNet.SignatureFramework
                 xel.AppendChild(sm);
             }
 
-            foreach (System.Security.Cryptography.Xml.Reference r in references)
+            foreach (Reference r in references)
             {
                 XmlNode xn = r.GetXml();
                 XmlNode newNode = document.ImportNode(xn, true);
@@ -160,7 +160,7 @@ namespace IntegraAfirmaNet.SignatureFramework
             XmlNodeList xnl = value.GetElementsByTagName(XmlSignatureConstants.ElementNames.Reference, XmlSignatureConstants.NamespaceURI);
             foreach (XmlNode xn in xnl)
             {
-                System.Security.Cryptography.Xml.Reference r = new System.Security.Cryptography.Xml.Reference();
+                var r = new SignatureFramework.Reference();
                 r.LoadXml((XmlElement)xn);
                 AddReference(r);
             }

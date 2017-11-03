@@ -1,21 +1,19 @@
-using System;
+锘縰sing System;
 using System.Collections;
 using System.Security.Cryptography;
 using System.Xml;
 using System.Security.Cryptography.Xml;
 using System.Xml.XPath;
 using System.IO;
-using System.Collections.Generic;
-
 
 namespace IntegraAfirmaNet.SignatureFramework
 {
-
-    public class SignedXml
+    public class SignedXmlTsa
     {
+
         private SignedXmlSignature signature;
 
-        public SignedXml()
+        public SignedXmlTsa()
         {
             signature = new SignedXmlSignature();
             signature.SignedInfo = new SignedInfo();
@@ -25,14 +23,12 @@ namespace IntegraAfirmaNet.SignatureFramework
         private string keyName;
         private XmlDocument envdoc;
 
-        public SignedXml(XmlDocument document)
-            : this()
+        public SignedXmlTsa(XmlDocument document) : this()
         {
             envdoc = document;
         }
 
-        public SignedXml(XmlElement elem)
-            : this()
+        public SignedXmlTsa(XmlElement elem) : this()
         {
             if (elem == null)
                 throw new ArgumentNullException("elem");
@@ -55,7 +51,7 @@ namespace IntegraAfirmaNet.SignatureFramework
         }
 
         /// <summary>
-        /// M閠odo de firma. Por defecto se coge el asociado al par de claves.
+        /// M茅todo de firma. Por defecto se coge el asociado al par de claves.
         /// </summary>
         public string SignatureMethod
         {
@@ -70,7 +66,7 @@ namespace IntegraAfirmaNet.SignatureFramework
 
         /// <summary>
         /// Objeto SignedInfo, este objeto ha sido completamente reformado para incluir los prefijos, 
-        /// ya que se observaban ciertas anomal韆s en la generaci髇 de firmas 
+        /// ya que se observaban ciertas anomal铆as en la generaci贸n de firmas 
         /// </summary>
         public SignedInfo SignedInfo
         {
@@ -79,7 +75,7 @@ namespace IntegraAfirmaNet.SignatureFramework
         }
 
         /// <summary>
-        /// Par de claves de firma electr髇ica
+        /// Par de claves de firma electr贸nica
         /// </summary>
         public AsymmetricAlgorithm SigningKey
         {
@@ -99,7 +95,7 @@ namespace IntegraAfirmaNet.SignatureFramework
         }
 
         /// <summary>
-        /// A馻de un objeto de tipo <code>Reference</code>
+        /// A帽ade un objeto de tipo <code>Reference</code>
         /// </summary>
         /// <param name="reference"></param>
         public void AddReference(Reference reference)
@@ -109,13 +105,16 @@ namespace IntegraAfirmaNet.SignatureFramework
 
         private Stream ApplyTransform(Transform t, XmlDocument doc)
         {
-            byte[] buffer = System.Text.Encoding.UTF8.GetBytes(doc.OuterXml);
-
-            using (MemoryStream ms = new MemoryStream(buffer))
+            t.LoadInput(doc);
+            if (t is XmlDsigEnvelopedSignatureTransform)
             {
-                t.LoadInput(ms);
-                return (MemoryStream)t.GetOutput(typeof(Stream));
+                XmlDocument d = (XmlDocument)t.GetOutput();
+                MemoryStream ms = new MemoryStream();
+                d.Save(ms);
+                return ms;
             }
+            else
+                return (Stream)t.GetOutput();
         }
 
         private Stream ApplyTransform(Transform t, Stream s)
@@ -132,7 +131,7 @@ namespace IntegraAfirmaNet.SignatureFramework
             return s;
         }
 
-        private byte[] GetReferenceHash(IntegraAfirmaNet.SignatureFramework.Reference r)
+        private byte[] GetReferenceHash(Reference r)
         {
             XmlDocument doc = new XmlDocument();
             doc.PreserveWhitespace = true;
@@ -140,18 +139,7 @@ namespace IntegraAfirmaNet.SignatureFramework
                 doc = envdoc;
             else
             {
-                XmlElement element = GetIdElement(envdoc, r.Uri.Remove(0, 1));
-                doc.LoadXml(element.OuterXml);
-
-                if (r.TransformChain.Count > 0)
-                {
-                    var namespaces = GetAllNamespaces(element);
-
-                    foreach (var item in namespaces)
-                    {
-                        AddNameSpace(doc, doc.DocumentElement, item.Name, item.Value);
-                    }
-                }
+                doc.LoadXml(GetIdElement(envdoc, r.Uri.Remove(0, 1)).OuterXml);
             }
 
             Stream s = null;
@@ -166,7 +154,7 @@ namespace IntegraAfirmaNet.SignatureFramework
                 }
             }
             else
-                s = ApplyTransform(new XmlDsigC14NTransform(), doc);
+                s = ApplyTransform(new SignatureFramework.XmlDsigC14NTransform(), doc);
 
             HashAlgorithm hash = (HashAlgorithm)CryptoConfig.CreateFromName(r.DigestMethod);
             return hash.ComputeHash(s);
@@ -174,7 +162,7 @@ namespace IntegraAfirmaNet.SignatureFramework
 
         private void DigestReferences()
         {
-            foreach (IntegraAfirmaNet.SignatureFramework.Reference r in signature.SignedInfo.References)
+            foreach (Reference r in signature.SignedInfo.References)
             {
                 if (r.DigestMethod == null)
                     r.DigestMethod = XmlSignatureConstants.XmlDsigSHA1Url;
@@ -182,7 +170,7 @@ namespace IntegraAfirmaNet.SignatureFramework
             }
         }
 
-        /// <remarks>S髄o se implementan las transformadas de canonicalizaci髇</remarks>
+        /// <remarks>S贸lo se implementan las transformadas de canonicalizaci贸n</remarks>
 
         private Stream SignedInfoTransformed()
         {
@@ -190,16 +178,16 @@ namespace IntegraAfirmaNet.SignatureFramework
             switch (signature.SignedInfo.CanonicalizationMethod)
             {
                 case XmlSignatureConstants.XmlDsigC14NTransformUrl:
-                    t = new XmlDsigC14NTransform();
+                    t = new SignatureFramework.XmlDsigC14NTransform();
                     break;
                 case XmlSignatureConstants.XmlDsigC14NWithCommentsTransformUrl:
-                    t = new XmlDsigC14NWithCommentsTransform();
+                    t = new SignatureFramework.XmlDsigC14NWithCommentsTransform();
                     break;
                 case XmlSignatureConstants.XmlDsigExcC14NTransformUrl:
-                    t = new XmlDsigExcC14NTransform(signature.SignedInfo.InclusiveNamespaces);
+                    t = new SignatureFramework.XmlDsigExcC14NTransform();
                     break;
                 case XmlSignatureConstants.XmlDsigExcC14NWithCommentsTransformUrl:
-                    t = new XmlDsigExcC14NWithCommentsTransform();
+                    t = new SignatureFramework.XmlDsigExcC14NWithCommentsTransform();
                     break;
                 default:
                     t = null;
@@ -209,77 +197,8 @@ namespace IntegraAfirmaNet.SignatureFramework
                 return null;
 
             XmlDocument doc = new XmlDocument();
-            doc.PreserveWhitespace = true;
-
-            XmlElement signatureNode = (XmlElement)envdoc.SelectSingleNode("//*[@Id='" + signature.Id + "']");
-
-            if (signatureNode != null)
-            {
-                XmlNamespaceManager xmlnsManager = new XmlNamespaceManager(envdoc.NameTable);
-                xmlnsManager.AddNamespace("ds", "http://www.w3.org/2000/09/xmldsig#");
-
-                XmlNode signedInfoNode = signatureNode.SelectSingleNode("ds:SignedInfo", xmlnsManager);
-
-                doc.LoadXml(signedInfoNode.OuterXml);
-            }
-            else
-            {
-                doc.LoadXml(signature.SignedInfo.GetXml().OuterXml);
-            }
-
-            var namespaces = GetAllNamespaces(signatureNode);
-
-            foreach (var item in namespaces)
-            {
-                AddNameSpace(doc, doc.DocumentElement, item.Name, item.Value);
-            }
-
+            doc.LoadXml(signature.SignedInfo.GetXml().OuterXml);
             return ApplyTransform(t, doc);
-        }
-
-        private void AddNameSpace(XmlDocument doc, XmlNode node, string name, string uri)
-        {
-            XmlAttribute newAttr = doc.CreateAttribute(name);
-            newAttr.Value = uri;
-
-            node.Attributes.Append(newAttr);
-        }
-
-
-        private List<XmlAttribute> GetAllNamespaces(XmlElement fromElement)
-        {
-            List<XmlAttribute> namespaces = new List<XmlAttribute>();
-
-            if (fromElement != null &&
-                fromElement.ParentNode.NodeType == XmlNodeType.Document)
-            {
-                foreach (XmlAttribute attr in fromElement.Attributes)
-                {
-                    if (attr.Name.StartsWith("xmlns") && !namespaces.Exists(f => f.Name == attr.Name))
-                    {
-                        namespaces.Add(attr);
-                    }
-                }
-
-                return namespaces;
-            }
-
-            XmlNode currentNode = fromElement;
-
-            while (currentNode != null && currentNode.NodeType != XmlNodeType.Document)
-            {
-                foreach (XmlAttribute attr in currentNode.Attributes)
-                {
-                    if (attr.Name.StartsWith("xmlns") && !namespaces.Exists(f => f.Name == attr.Name))
-                    {
-                        namespaces.Add(attr);
-                    }
-                }
-
-                currentNode = currentNode.ParentNode;
-            }
-
-            return namespaces;
         }
 
         private byte[] Hash(string hashAlgorithm)
@@ -291,7 +210,7 @@ namespace IntegraAfirmaNet.SignatureFramework
         }
 
         /// <summary>
-        /// Validaci髇 de la firma electr髇ica contenida
+        /// Validaci贸n de la firma electr贸nica contenida
         /// </summary>
         /// <returns>true si se ha validado correctamente</returns>
         public virtual bool CheckSignature()
@@ -303,7 +222,7 @@ namespace IntegraAfirmaNet.SignatureFramework
 
         private bool CheckReferenceIntegrity()
         {
-            foreach (IntegraAfirmaNet.SignatureFramework.Reference r in signature.SignedInfo.References)
+            foreach (Reference r in signature.SignedInfo.References)
             {
                 if (!Compare(r.DigestValue, GetReferenceHash(r)))
                     return false;
@@ -311,31 +230,10 @@ namespace IntegraAfirmaNet.SignatureFramework
             return true;
         }
 
-        private SignatureDescription GetSignatureDescription(string signatureMethod)
-        {
-            SignatureDescription sd = (SignatureDescription)CryptoConfig.CreateFromName(signature.SignedInfo.SignatureMethod);
-
-            if (sd == null)
-            {
-                if (signature.SignedInfo.SignatureMethod == "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256")
-                {
-                    CryptoConfig.AddAlgorithm(typeof(Microsoft.Xades.RSAPKCS1SHA256SignatureDescription), "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256");
-                }
-                else if (this.SignedInfo.SignatureMethod == "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512")
-                {
-                    CryptoConfig.AddAlgorithm(typeof(Microsoft.Xades.RSAPKCS1SHA512SignatureDescription), "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512");
-                }
-
-                sd = CryptoConfig.CreateFromName(this.SignedInfo.SignatureMethod) as SignatureDescription;
-            }
-
-            return sd;
-        }
-
         /// <summary>
         /// Valida la firma electronica utilizando una clave externa
         /// </summary>
-        /// <param name="key">Clave publica asociada a la firma electr髇ica</param>
+        /// <param name="key">Clave publica asociada a la firma electr贸nica</param>
         /// <returns>true si la firma se valido correctamente</returns>
         public bool CheckSignature(AsymmetricAlgorithm key)
         {
@@ -345,8 +243,7 @@ namespace IntegraAfirmaNet.SignatureFramework
             bool result = CheckReferenceIntegrity();
             if (result)
             {
-                SignatureDescription sd = GetSignatureDescription(signature.SignedInfo.SignatureMethod);
-
+                SignatureDescription sd = (SignatureDescription)CryptoConfig.CreateFromName(signature.SignedInfo.SignatureMethod);
                 byte[] hash = Hash(sd.DigestAlgorithm);
                 AsymmetricSignatureDeformatter verifier = (AsymmetricSignatureDeformatter)CryptoConfig.CreateFromName(sd.DeformatterAlgorithm);
                 if (verifier != null)
@@ -394,9 +291,10 @@ namespace IntegraAfirmaNet.SignatureFramework
             if (key != null)
             {
                 // required before hashing
+                signature.SignedInfo.SignatureMethod = key.SignatureAlgorithm;
                 DigestReferences();
 
-                SignatureDescription sd = GetSignatureDescription(signature.SignedInfo.SignatureMethod);
+                SignatureDescription sd = (SignatureDescription)CryptoConfig.CreateFromName(signature.SignedInfo.SignatureMethod);
 
                 // the hard part - C14Ning the KeyInfo
                 byte[] hash = Hash(sd.DigestAlgorithm);
@@ -410,19 +308,7 @@ namespace IntegraAfirmaNet.SignatureFramework
 
                 if (signer != null)
                 {
-                    if (sd.DigestAlgorithm == typeof(SHA1CryptoServiceProvider).FullName)
-                    {
-                        signer.SetHashAlgorithm("SHA1");
-                    }
-                    else if (sd.DigestAlgorithm == typeof(SHA256Managed).FullName)
-                    {
-                        signer.SetHashAlgorithm("SHA256");
-                    }
-                    else if (sd.DigestAlgorithm == typeof(SHA512Managed).FullName)
-                    {
-                        signer.SetHashAlgorithm("SHA512");
-                    }
-
+                    signer.SetHashAlgorithm("SHA1");
                     signature.SignatureValue = signer.CreateSignature(hash);
                 }
             }
@@ -492,4 +378,5 @@ namespace IntegraAfirmaNet.SignatureFramework
             set { xmlResolver = value; }
         }
     }
+
 }

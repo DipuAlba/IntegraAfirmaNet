@@ -99,14 +99,14 @@ namespace IntegraAfirmaNet.Soap.Filters
             String bodyId = "Body-" + Guid.NewGuid().ToString();
             envelope.Body.SetAttribute("Id", bodyId);
 
-            System.Security.Cryptography.Xml.Reference bsBody = new System.Security.Cryptography.Xml.Reference();
+            IntegraAfirmaNet.SignatureFramework.Reference bsBody = new IntegraAfirmaNet.SignatureFramework.Reference();
             bsBody.Uri = "#" + bodyId;
-            bsBody.AddTransform(new System.Security.Cryptography.Xml.XmlDsigExcC14NTransform());
+            bsBody.AddTransform(new IntegraAfirmaNet.SignatureFramework.XmlDsigExcC14NTransform());
             si.AddReference(bsBody);
 
-            System.Security.Cryptography.Xml.Reference refTimestamp = new System.Security.Cryptography.Xml.Reference();
+            IntegraAfirmaNet.SignatureFramework.Reference refTimestamp = new IntegraAfirmaNet.SignatureFramework.Reference();
             refTimestamp.Uri = "#" + IdAttTs.Value;
-            refTimestamp.AddTransform(new System.Security.Cryptography.Xml.XmlDsigExcC14NTransform());
+            refTimestamp.AddTransform(new IntegraAfirmaNet.SignatureFramework.XmlDsigExcC14NTransform());
             si.AddReference(refTimestamp);
 
             signature.SignedInfo = si;
