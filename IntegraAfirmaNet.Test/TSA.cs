@@ -57,6 +57,8 @@ namespace IntegraAfirmaNet.Test
                 Assert.AreEqual("urn:oasis:names:tc:dss:1.0:resultmajor:Success", resultado.Result.ResultMajor);
             }*/
 
+            ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;//Para permitir conexiones inseguras (fiddler)
+
             try
             {
                 DocumentHash documentHash = new DocumentHash();
